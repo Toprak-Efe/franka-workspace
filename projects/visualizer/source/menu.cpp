@@ -1,0 +1,22 @@
+#include <ftxui/dom/elements.hpp>
+#include <ftxui/screen/screen.hpp>
+#include <ftxui/screen/string.hpp>
+#include <ftxui/component/captured_mouse.hpp>
+#include <ftxui/component/component.hpp> 
+#include <ftxui/component/component_options.hpp> 
+#include <ftxui/component/screen_interactive.hpp>
+#include <menu.hpp>
+
+namespace menu {
+
+    int select(const std::vector<std::string> &selections) {
+        auto screen = ftxui::ScreenInteractive::Fullscreen();
+        int selected = 0;
+        ftxui::MenuOption option;
+        option.on_enter = screen.ExitLoopClosure();
+        auto menu = ftxui::Menu(&selections, &selected, option);
+        screen.Loop(menu);
+        return selected;
+    }
+
+} // namespace menu;
