@@ -1,32 +1,15 @@
-#include <franka/robot.h>
-#include <franka/exception.h>
-#include <franka/robot_state.h>
-
-#include <ftxui/dom/elements.hpp>
-#include <ftxui/screen/screen.hpp>
-#include <ftxui/screen/string.hpp>
-
-#define ROBOT_HOSTNAME "127.0.0.1"
+#include <fstream>
+#include <app.hpp>
 
 int main(int argc, char *argv[]) {
-    using namespace ftxui;
+    std::ofstream log_file; 
+    log_file.open("/tmp/robot.log", std::ios_base::out | std::ios_base::app);
+    
+    App application;
+    application.run(log_file);
 
-    std::
-
-    Element interface;
-    auto screen = Screen::Create(
-        Dimension::Full(),
-        Dimension::Fit(interface)
-    );
-
-    try {
-        franka::Robot robot(ROBOT_HOSTNAME);
-        robot.read([&](const franka::RobotState &state) {
-
-            return false; 
-        });
-    } catch (franka::Exception &e) {
-        
+    if (log_file.is_open()) {
+        log_file.close();
     }
-    return 0;
+    exit(0);
 }

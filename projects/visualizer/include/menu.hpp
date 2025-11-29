@@ -3,6 +3,13 @@
 
 #include <vector>
 #include <string>
+#include <ftxui/dom/elements.hpp>
+#include <ftxui/screen/screen.hpp>
+#include <ftxui/screen/string.hpp>
+#include <ftxui/component/captured_mouse.hpp>
+#include <ftxui/component/component.hpp> 
+#include <ftxui/component/component_options.hpp> 
+#include <ftxui/component/screen_interactive.hpp>
 
 namespace menu {
 
