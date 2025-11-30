@@ -13,6 +13,8 @@
 
 namespace menu {
 
+void display(const std::vector<std::string> &options);
+
 int select(const std::vector<std::string> &options);
 
 } // namespace menu;

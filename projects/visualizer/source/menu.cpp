@@ -9,6 +9,18 @@
 
 namespace menu {
 
+    void display(const std::vector<std::string> &options) {
+        auto screen = ftxui::ScreenInteractive::Fullscreen();
+        std::vector<ftxui::Component> entries(options.size());
+        for (const std::string &str : options) {
+            entries.emplace_back(ftxui::MenuEntry(str));
+        }
+        auto menu = ftxui::Container::Vertical(
+            entries
+        );
+        screen.Loop(menu);
+    }
+
     int select(const std::vector<std::string> &selections) {
         auto screen = ftxui::ScreenInteractive::Fullscreen();
         int selected = 0;
