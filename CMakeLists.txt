@@ -7,14 +7,13 @@ project(franka-workspace
 
 include(FetchContent)
 FetchContent_Declare(cpptrace
-  GIT_REPOSITORY https://github.com/jeremy-rifkin/cpptrace.git
-  GIT_TAG        v1.0.4 # <HASH or TAG>
+    GIT_REPOSITORY https://github.com/jeremy-rifkin/cpptrace.git
+    GIT_TAG        v1.0.4 # <HASH or TAG>
 )
-FetchContent_Declare(ftxui
-  GIT_REPOSITORY https://github.com/ArthurSonzogni/ftxui
-  GIT_TAG v6.1.9
+FetchContent_Declare(json
+    URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
 )
-FetchContent_MakeAvailable(cpptrace ftxui)
+FetchContent_MakeAvailable(cpptrace ftxui json)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

@@ -5,9 +5,11 @@ project(visualizer
 )
 
 find_package(Franka REQUIRED)
+find_package(Nebula REQUIRED)
 
 set(SOURCES
-    source/main.cpp
+    source/config.cpp
+    source/entry.cpp
     source/menu.cpp
     source/app.cpp
 )
@@ -17,10 +19,11 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE
+    Nebula
+    SDL2::SDL2
+    OpenGL::OpenGL
     Franka::Franka
     cpptrace::cpptrace
-    ftxui::component
-    ftxui::dom
-    ftxui::screen
+    nlohmann_json::nlohmann_json
 )
 

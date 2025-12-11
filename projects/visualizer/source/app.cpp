@@ -1,21 +1,42 @@
-#include <algorithm>
 #include <atomic>
 #include <cpptrace/basic.hpp>
 #include <app.hpp>
-#include <cstdio>
+#include <franka/robot.h>
+#include <franka/robot_state.h>
 #include <fstream>
 #include <ios>
 #include <menu.hpp>
 #include <filesystem>
-#include <ranges>
+#include <config.hpp>
 
-App::App() {
+Asclepius::App::App(std::ofstream &log_file) :
+    m_log_file(log_file),
+    m_robot1(g_configuration["ROBOT1_HOSTNAME"]),
+    m_robot2(g_configuration["ROBOT2_HOSTNAME"])
+{
+    m_robot1.read([&](const franka::RobotState &state) {
+        for (size_t i = 0; i < 7; i++) {
+            m_robot_poses[0][i] = state.q[i];
+        }
+        return m_running ? false : true;
+    }); 
+    m_robot2.read([&](const franka::RobotState &state) {
+        for (size_t i = 0; i < 7; i++) {
+            m_robot_poses[1][i] = state.q[i];
+        }
+        return m_running ? false : true;
+    }); 
+}
+
+Asclepius::App::~App() {
+    m_robot1.stop(); 
+    m_robot2.stop(); 
+}
+
+void Asclepius::App::initialize() {
 
 }
 
-App::~App() {
-
-}
 
 std::vector<std::string> getNetIfaces() {
     std::vector<std::string> out(1);
@@ -50,32 +71,10 @@ std::vector<std::string> getNetIfaces() {
     return out;
 }
 
-void App::run(std::ofstream &log_file) {
-    std::vector<std::string> menu{
-        "󰭆 Robots",
-        "󱂇 Network",
-        "󰈆 Exit"
-    };
+void Asclepius::App::run() {
 
-    std::atomic_bool running(true);
-    while (running) {
-        int selected = menu::select(menu);
-        switch (selected) {
-            case 0:
-                break;
-            case 1:
-                {
-                    auto netIfaces = getNetIfaces();
-                    menu::display(netIfaces);
-                }
-                break;
-            case 2:
-                running = false;
-                break;
-            default:
-                log_file << "ERROR: Received unexpected value.\n" << cpptrace::generate_trace().to_string();
-                exit(1);
-        }
+    while (m_running) {
+         
     }
 }
 
