@@ -10,7 +10,6 @@ find_package(Nebula REQUIRED)
 set(SOURCES
     source/config.cpp
     source/entry.cpp
-    source/menu.cpp
     source/app.cpp
 )
 
