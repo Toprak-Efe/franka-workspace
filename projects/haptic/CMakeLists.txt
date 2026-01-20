@@ -9,6 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(HDAPI_LIBRARIES
     /usr/lib/libHD.so
+    /usr/lib/libHDU.a
 )
 
 set(SOURCES
@@ -21,10 +22,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    pthread
-    fmt::fmt
-    cpptrace::cpptrace
-    nlohmann_json::nlohmann_json
     ${HDAPI_LIBRARIES}
 )
 
