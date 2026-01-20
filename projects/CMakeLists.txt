@@ -1,1 +1,2 @@
-add_subdirectory(visualizer)
+add_subdirectory(controller)
+add_subdirectory(cartesian)

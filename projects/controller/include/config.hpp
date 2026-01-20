@@ -1,6 +1,6 @@
-#ifndef CONFIG_HPP
-#define CONFIG_HPP
+#pragma once 
 
+#include <mutex>
 #include <string>
 #include <unordered_map>
 
@@ -10,13 +10,12 @@ class Configuration {
 public:
     Configuration();
     ~Configuration();
-    std::string operator[](std::string_view index);
+    const std::string &operator[](const std::string &index);
 private:
-    std::unordered_map <std::string_view, std::string> m_config;
+    std::unordered_map <std::string, std::string> m_config;
 }; // class Configuration
 
 inline Configuration g_configuration;
 
 }; // namespace Asclepius
 
-#endif//CONFIG_HPP

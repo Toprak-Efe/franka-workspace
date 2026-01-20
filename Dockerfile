@@ -20,7 +20,8 @@ RUN apt-get update && apt-get install -y \
     cppcheck \
     vim \
     gdb \
-    gosu
+    gosu \
+    wget
 
 RUN curl -L https://github.com/Kitware/CMake/archive/refs/tags/v4.2.0.tar.gz -o cmake.tar.gz \
     && tar -xf cmake.tar.gz \
@@ -44,6 +45,12 @@ ENV LD_LIBRARY_PATH=/opt/openrobots/lib:$LD_LIBRARY_PATH
 ENV PYTHONPATH=/opt/openrobots/lib/python3.10/site-packages:$PYTHONPATH 
 ENV CMAKE_PREFIX_PATH=/opt/openrobots:$CMAKE_PREFIX_PATH
 
+RUN wget https://s3.amazonaws.com/dl.3dsystems.com/binaries/support/downloads/KB+Files/Open+Haptics/openhaptics_3.4-0-developer-edition-amd64.tar.gz \
+    && tar -xf openhaptics_3.4-0-developer-edition-amd64.tar.gz \
+    && cd OpenHaptics \
+    && make all \
+    && make install
+
 RUN git clone --recurse-submodules https://github.com/Toprak-Efe/libfranka \
     && cd libfranka \
     && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \ 
@@ -65,8 +72,6 @@ RUN apt-get update && apt-get install -y \
     && apt-get update \
     && apt-get upgrade \
     && apt-get install -y ros-humble-desktop ros-dev-tools
-
-
 
 RUN useradd -ms /bin/bash geronimo
 
