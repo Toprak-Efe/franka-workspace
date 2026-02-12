@@ -5,7 +5,6 @@
 #include <HDU/hduError.h>
 
 #include <array>
-#include <iostream>
 #include <thread>
 #include <atomic>
 #include <csignal>
@@ -22,7 +21,7 @@ void signal_handler(int signal) {
 typedef std::array<HDdouble, 3> vec3;
 
 vec3 haptic_force_field(const vec3 &pos) {
-    return {1.0, std::cos(pos[1]), 0.0};
+    return {1.0, std::cos(pos[1]*0.1)*0.6, 0.0};
 }
 
 HDCallbackCode HDCALLBACK haptic_handler(void *data) {
