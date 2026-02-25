@@ -12,7 +12,7 @@ void Asclepius::ShutdownCoordinator::shutdown() {
 }
 
 bool Asclepius::ShutdownCoordinator::is_shutdown() {
-  return m_running.load() == false;
+  return !m_running.load();
 }
 
 void Asclepius::ShutdownCoordinator::await_shutdown() {

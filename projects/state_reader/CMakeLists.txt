@@ -7,9 +7,6 @@ project(state_reader
 find_package(Franka REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 set(SOURCES
     source/main.cpp
 )
