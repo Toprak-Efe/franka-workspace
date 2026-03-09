@@ -1,4 +1,2 @@
-add_subdirectory(controller)
-add_subdirectory(cartesian)
-add_subdirectory(haptic)
-add_subdirectory(state_reader)
+add_subdirectory(libraries)
+add_subdirectory(executables)

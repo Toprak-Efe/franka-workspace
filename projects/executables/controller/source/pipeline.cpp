@@ -235,5 +235,21 @@ void Asclepius::KilohertzLoop::await() {
     m_schedule.tv_sec += 1;
     m_schedule.tv_nsec -= 1000000000;
   }
+
+  struct timespec now;
+  clock_gettime(CLOCK_MONOTONIC, &now);
+  if (now.tv_sec > m_schedule.tv_sec || ((now.tv_sec == m_schedule.tv_sec) &&
+                                         (now.tv_nsec >= m_schedule.tv_nsec))) {
+    while (now.tv_sec > m_schedule.tv_sec ||
+           ((now.tv_sec == m_schedule.tv_sec) &&
+            (now.tv_nsec >= m_schedule.tv_nsec))) {
+      m_schedule.tv_nsec += PERIOD_NS;
+      while (m_schedule.tv_nsec >= 1000000000) {
+        m_schedule.tv_sec += 1;
+        m_schedule.tv_nsec -= 1000000000;
+      }
+    }
+  }
+
   clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &m_schedule, nullptr);
 }

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 4.0.0)
 
 set(CMAKE_C_COMPILER "clang-21")
 set(CMAKE_CXX_COMPILER "clang++-21")
@@ -8,21 +8,25 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(franka-workspace
     VERSION 0.0.1
-    DESCRIPTION "Executables and libraries for a thesis project."
+    DESCRIPTION "Libraries and executables for a thesis project."
     LANGUAGES CXX
 )
 
 include(FetchContent)
 FetchContent_Declare(
-    json
-    URL            https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
+    Matplot++
+    GIT_REPOSITORY https://github.com/alandefreitas/matplotplusplus
+    GIT_TAG v1.2.2
 )
 FetchContent_Declare(
-    fmt
-    GIT_REPOSITORY https://github.com/fmtlib/fmt
-    GIT_TAG        e69e5f977d458f2650bb346dadf2ad30c5320281 # 10.2.1
-) 
-FetchContent_MakeAvailable(fmt json)
-
+    atomic_queue 
+    GIT_REPOSITORY https://github.com/max0x7ba/atomic_queue.git 
+    GIT_TAG v1.7.1
+)
+FetchContent_Declare(
+    json
+    URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
+)
+FetchContent_MakeAvailable(Matplot++ atomic_queue json) 
 
 add_subdirectory(projects)

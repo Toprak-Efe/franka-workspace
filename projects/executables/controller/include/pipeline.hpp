@@ -13,9 +13,9 @@
 #include <ranges>
 #include <thread>
 
-namespace Asclepius {
-
 HDCallbackCode HDCALLBACK haptic_callback(void *data);
+
+namespace Asclepius {
 
 using Timestamp = std::chrono::time_point<std::chrono::steady_clock>;
 template <typename T>
@@ -32,15 +32,17 @@ public:
     m_samples[1] = sample;
   }
   T sample() {
-      Timestamp curr_time = std::chrono::steady_clock::now();
-      Timestamp &prev_time = m_samples[1].timestamp;
-      Timestamp &last_time = m_samples[0].timestamp;
-    
-      decltype(T::data) data = m_samples[0].data;
-      for (auto&& [curr_sample, prev_sample, last_sample] : std::ranges::views::zip(data, m_samples[1].data, m_samples[0].data)) {
-        curr_sample = (curr_time - prev_time)*(prev_sample - last_sample)/(prev_time - last_time);
-      }
-      return {.timestamp{curr_time}, .data{data}};
+    Timestamp curr_time = std::chrono::steady_clock::now();
+    Timestamp &prev_time = m_samples[1].timestamp;
+    Timestamp &last_time = m_samples[0].timestamp;
+
+    decltype(T::data) data = m_samples[0].data;
+    for (auto &&[curr_sample, prev_sample, last_sample] :
+         std::ranges::views::zip(data, m_samples[1].data, m_samples[0].data)) {
+      curr_sample = (curr_time - prev_time) * (prev_sample - last_sample) /
+                    (prev_time - last_time);
+    }
+    return {.data{data}, .timestamp{curr_time}};
   }
 
 private:
@@ -100,10 +102,10 @@ public:
 
 private:
   std::shared_ptr<std::thread> m_thread;
+  Eigen::Quaterniond m_rotation_mapping;
   void _thread_function();
   FrankaInterface m_franka_interface;
   HapticInterface m_haptic_interface;
-  Eigen::Quaterniond m_rotation_mapping;
 };
 
 class KilohertzLoop {

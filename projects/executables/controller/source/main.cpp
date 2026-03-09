@@ -1,7 +1,7 @@
-#include "fmt/core.h"
 #include <HD/hdDevice.h>
 #include <HD/hdScheduler.h>
 #include <HDU/hduError.h>
+#include <printf.h>
 #include <config.hpp>
 #include <csignal>
 #include <exception.hpp>
@@ -25,6 +25,7 @@ int main() {
       Asclepius::g_configuration["HAPTIC2_DEVICENAME"]);
 
   signal(SIGINT, signal_handler);
+  signal(SIGTERM, signal_handler);
 
   try {
     g_pipelines.left_pipeline = std::make_unique<Asclepius::Pipeline>(
@@ -49,7 +50,7 @@ int main() {
     g_pipelines.right_pipeline->stop();
     
   } catch (Asclepius::AsclepiusException &error) {
-    fmt::print("Asclepius Exception: {}", error.what());
+    ::printf("Asclepius Exception: %s", error.what());
   }
 
   return 0;
