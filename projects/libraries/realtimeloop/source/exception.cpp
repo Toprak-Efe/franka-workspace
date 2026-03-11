@@ -1,4 +1,4 @@
-#include <realtime_loop/exception.hpp>
+#include <realtimeloop/exception.hpp>
 
 Asclepius::AsclepiusException::AsclepiusException(const std::string &msg) : m_msg(msg) {}
 

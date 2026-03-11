@@ -1,13 +1,13 @@
-project(realtime_loop
+project(realtimeloop
     LANGUAGES CXX
 )
 
 set(HEADERS
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/realtime_loop/monoloop.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/realtime_loop/schedtimer.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/realtime_loop/telemetry/asynclogger.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/realtime_loop/telemetry/loopinfo.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/realtime_loop/telemetry/scopedtimer.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/realtimeloop/monoloop.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/realtimeloop/schedtimer.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/realtimeloop/telemetry/asynclogger.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/realtimeloop/telemetry/loopinfo.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/realtimeloop/telemetry/scopedtimer.hpp
 )
 
 set(SOURCES

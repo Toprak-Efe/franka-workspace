@@ -1,1 +1,2 @@
-add_subdirectory(realtime_loop)
+add_subdirectory(realtimeloop)
+add_subdirectory(bilateralcontrol)

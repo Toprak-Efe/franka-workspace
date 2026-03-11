@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstring>
-#include <realtime_loop/control/cache.hpp>
+#include <realtimeloop/control/cache.hpp>
 #include <array>
 #include <atomic>
 #include <unistd.h>

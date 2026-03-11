@@ -3,7 +3,7 @@
 #include <atomic>
 #include <array>
 #include <bit>
-#include <realtime_loop/control/cache.hpp>
+#include <realtimeloop/control/cache.hpp>
 
 namespace Asclepius::Control {
 

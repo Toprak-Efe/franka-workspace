@@ -1,8 +1,8 @@
 #pragma once
 
-#include <realtime_loop/schedtimer.hpp>
-#include <realtime_loop/telemetry/asynclogger.hpp>
-#include <realtime_loop/telemetry/scopedtimer.hpp>
+#include <realtimeloop/schedtimer.hpp>
+#include <realtimeloop/telemetry/asynclogger.hpp>
+#include <realtimeloop/telemetry/scopedtimer.hpp>
 #include <atomic>
 #include <chrono>
 #include <concepts>
