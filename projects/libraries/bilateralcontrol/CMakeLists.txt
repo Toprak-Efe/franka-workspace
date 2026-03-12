@@ -7,10 +7,12 @@ set(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/bilateralcontrol/haptic.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/bilateralcontrol/pipeline.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/bilateralcontrol/servo.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/bilateralcontrol/shutdown.hpp
 )
 
 set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/source/haptic.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/shutdown.cpp
 )
 
 add_library(${PROJECT_NAME} STATIC)

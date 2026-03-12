@@ -50,19 +50,19 @@ struct FmtLoc {
 
 } // namespace detail
 
-class Logger {
+class SyncLogger {
 public:
-    static Logger& get() {
-        static Logger instance;
+    static SyncLogger& get() {
+        static SyncLogger instance;
         return instance;
     }
 
-    ~Logger() = default;
+    ~SyncLogger() = default;
 
-    Logger(const Logger&)            = delete;
-    Logger(Logger&&)                 = delete;
-    Logger& operator=(const Logger&) = delete;
-    Logger& operator=(Logger&&)      = delete;
+    SyncLogger(const SyncLogger&)            = delete;
+    SyncLogger(SyncLogger&&)                 = delete;
+    SyncLogger& operator=(const SyncLogger&) = delete;
+    SyncLogger& operator=(SyncLogger&&)      = delete;
 
     template <typename... Args>
     void info(detail::FmtLoc fl, Args&&... args) {
@@ -80,7 +80,7 @@ public:
     }
 
 private:
-    Logger() : m_log_file("asclepius.log", std::ios::app) {}
+    SyncLogger() : m_log_file("asclepius.log", std::ios::app) {}
 
     std::ofstream m_log_file;
 

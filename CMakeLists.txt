@@ -19,14 +19,14 @@ FetchContent_Declare(
     GIT_TAG v1.2.2
 )
 FetchContent_Declare(
-    atomic_queue 
-    GIT_REPOSITORY https://github.com/max0x7ba/atomic_queue.git 
+    atomic_queue
+    GIT_REPOSITORY https://github.com/max0x7ba/atomic_queue.git
     GIT_TAG v1.7.1
 )
 FetchContent_Declare(
     json
     URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
 )
-FetchContent_MakeAvailable(Matplot++ atomic_queue json) 
+FetchContent_MakeAvailable(Matplot++ atomic_queue json)
 
 add_subdirectory(projects)

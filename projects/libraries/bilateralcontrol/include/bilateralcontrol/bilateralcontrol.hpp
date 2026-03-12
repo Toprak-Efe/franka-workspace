@@ -7,6 +7,9 @@
 
 namespace Asclepius {
 
+/**
+ * @note The methods of this class are NOT thread-safe.
+ */
 template <bool TelemetryEnabled> class BilateralControl {
 public:
   BilateralControl(const std::string &franka_host, const std::string &haptic_name)
@@ -14,23 +17,11 @@ public:
   ~BilateralControl() { stop(); }
 
   void start() {
-    std::lock_guard<std::mutex> lock(m_lock);
-    if (m_running)
-      return;
-    else
-      m_running = true;
-
     m_franka_loop.start();
     m_haptic_loop.start();
   }
 
   void stop() {
-    std::lock_guard<std::mutex> lock(m_lock);
-    if (!m_running)
-      return;
-    else
-      m_running = false;
-
     m_franka_loop.stop();
     m_haptic_loop.stop();
   }

@@ -19,22 +19,19 @@ set(HDAPI_LIBRARIES
 set(SOURCES
     source/main.cpp
     source/config.cpp
-    source/shutdown.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})
-
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE
+    nlohmann_json::nlohmann_json
     pthread
     atomic_queue
     Franka::Franka
-    nlohmann_json::nlohmann_json
-    Matplot++::matplot
-    Eigen3::Eigen
-    realtime_loop
+    realtimeloop
+    bilateralcontrol
     ${HDAPI_LIBRARIES}
 )
 

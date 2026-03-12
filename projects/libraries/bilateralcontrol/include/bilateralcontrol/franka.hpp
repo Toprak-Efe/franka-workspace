@@ -1,6 +1,5 @@
 #pragma once
 
-#include <atomic>
 #include <bilateralcontrol/servo.hpp>
 #include <chrono>
 #include <exception>
@@ -9,8 +8,6 @@
 #include <franka/robot.h>
 #include <memory>
 #include <mutex>
-#include <queue>
-#include <semaphore>
 #include <thread>
 
 namespace Asclepius {
@@ -28,7 +25,7 @@ public:
     { c.shutdown() };
     { c.shutdown_exception() };
   }
-  void start(T shutdown_coordinator) {
+  void start(T &shutdown_coordinator) {
     std::lock_guard<std::mutex> lock_guard(m_lock);
     if (m_running) {
       return;
@@ -56,35 +53,36 @@ public:
           m_buffer->force.add(ft);
 
           Velocities vw;
-          if (m_buffer->velocity.get(vw)) {
+          if (m_buffer->velocity.get(vw))
             vw_prev = vw;
+          else
+            vw = vw_prev;
+          if (stoken.stop_requested()) {
+            return franka::MotionFinished(vw.data);
+          } else
             return vw.data;
-          } else {
-            return vw_prev.data;
-          }
         });
       } catch (...) {
         std::exception_ptr ex = std::current_exception();
         shutdown_coordinator.shutdown_exception(ex);
       }
+      std::lock_guard<std::mutex> lock(m_lock);
+      m_running = false;
+      m_buffer->force.reset();
+      m_buffer->velocity.reset();
     }};
   }
 
   void stop() {
-    std::lock_guard<std::mutex> lock_guard(m_lock);
-    if (!m_running) {
-      return;
-    } else {
-      m_running = false;
+    std::jthread local_thread;
+    {
+      std::lock_guard<std::mutex> lock(m_lock);
+      std::swap(local_thread, m_thread);
     }
-
-    if (m_thread.joinable()) {
-      m_thread.request_stop();
-      m_thread.join();
+    local_thread.request_stop();
+    if (local_thread.joinable()) {
+      local_thread.join();
     }
-
-    m_buffer->force.reset();
-    m_buffer->velocity.reset();
   }
 
 private:

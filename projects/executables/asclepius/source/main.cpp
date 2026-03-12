@@ -1,27 +1,28 @@
-#include <config.hpp>
-#include <control.hpp>
+#include "../include/config.hpp"
+#include <bilateralcontrol/bilateralcontrol.hpp>
+#include <bilateralcontrol/shutdown.hpp>
+#include <bilateralcontrol/synclogger.hpp>
 #include <csignal>
-#include <cstdio>
-#include <logging.hpp>
-#include <shutdown.hpp>
-#include <unistd.h>
+#include <exception>
 
 using namespace Asclepius;
 
-void signal_handler(int) { g_shutdown_coordinator.shutdown(); }
+void signal_handler(int) { ShutdownCoordinator::get().shutdown(); }
 
 int main() {
   signal(SIGINT, signal_handler);
 
-  try {
-    BilateralControl<true> controller{g_configuration["ROBOT1_HOSTNAME"],
-                                      g_configuration["HAPTIC1_DEVICENAME"]};
-    controller.start();
+  constexpr bool TelemetryOn{true};
+  BilateralControl<TelemetryOn> controller{g_configuration["ROBOT1_HOSTNAME"],
+                                           g_configuration["HAPTIC1_DEVICENAME"]};
+  controller.start();
+  ShutdownCoordinator::get().await_shutdown();
+  controller.stop();
 
-    g_shutdown_coordinator.await_shutdown();
-  } catch (std::exception &e) {
-    auto &log = Logger::get();
-    log.error("Received exception {}, exiting.", e.what());
+  auto excptr = ShutdownCoordinator::get().get_shutdown_exception();
+  if (!excptr) return 0;
+  try { std::rethrow_exception(*excptr); } catch (std::exception &e) {
+    SyncLogger::get().info("Exception thrown, exiting: %s\n", e.what());
     return 1;
   }
 }

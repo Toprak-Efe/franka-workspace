@@ -1,6 +1,6 @@
 #pragma once
 
-#include <realtime_loop/telemetry/loopinfo.hpp>
+#include <realtimeloop/telemetry/loopinfo.hpp>
 #include <cstdint>
 #include <ctime>
 #include <type_traits>

@@ -12,8 +12,14 @@ struct HapticBuffer {}; // struct HapticBuffer
 template <bool TelemetryEnabled> class HapticServoLoop {
 public:
   HapticServoLoop(const std::string &devicename) {}
-  void start() {}
-  void stop() {}
+  void start() {
+
+  }
+
+  void stop() {
+
+  }
+
 
 private:
 }; // class HapticServoLoop;
