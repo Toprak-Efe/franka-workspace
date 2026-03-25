@@ -3,11 +3,13 @@ project(realtimeloop
 )
 
 set(HEADERS
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/realtimeloop/asynclogger.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/realtimeloop/exception.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/realtimeloop/loopinfo.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/realtimeloop/monoloop.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/realtimeloop/schedtimer.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/realtimeloop/telemetry/asynclogger.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/realtimeloop/telemetry/loopinfo.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/realtimeloop/telemetry/scopedtimer.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/realtimeloop/scopedtimer.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/realtimeloop/serialization.hpp
 )
 
 set(SOURCES
@@ -15,17 +17,18 @@ set(SOURCES
 )
 
 add_library(${PROJECT_NAME} STATIC)
-target_include_directories(${PROJECT_NAME} PUBLIC 
+target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 target_sources(${PROJECT_NAME}
-    PUBLIC 
+    PUBLIC
     ${HEADERS}
     PRIVATE
     ${SOURCES}
 )
-target_link_libraries(${PROJECT_NAME} PUBLIC 
+target_link_libraries(${PROJECT_NAME} PUBLIC
     pthread
     atomic_queue
+    snippets
 )
 

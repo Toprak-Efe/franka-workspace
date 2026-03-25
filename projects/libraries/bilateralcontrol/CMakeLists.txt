@@ -5,8 +5,7 @@ project(bilateralcontrol
 set(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/bilateralcontrol/franka.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/bilateralcontrol/haptic.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/bilateralcontrol/pipeline.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/bilateralcontrol/servo.hpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/include/bilateralcontrol/pipeline.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/bilateralcontrol/shutdown.hpp
 )
 
@@ -29,5 +28,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     pthread
     atomic_queue
     realtimeloop
+    snippets
 )
 

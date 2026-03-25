@@ -27,6 +27,11 @@ FetchContent_Declare(
     json
     URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
 )
-FetchContent_MakeAvailable(Matplot++ atomic_queue json)
+FetchContent_Declare(
+    snippets 
+    GIT_REPOSITORY https://git.ninehundredandsixtyseventhhall.com/toprak/snippets.git
+    GIT_TAG main 
+)
+FetchContent_MakeAvailable(Matplot++ atomic_queue json snippets)
 
 add_subdirectory(projects)

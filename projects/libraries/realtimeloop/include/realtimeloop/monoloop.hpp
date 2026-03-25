@@ -1,33 +1,26 @@
 #pragma once
 
-#include <realtimeloop/schedtimer.hpp>
-#include <realtimeloop/telemetry/asynclogger.hpp>
-#include <realtimeloop/telemetry/scopedtimer.hpp>
-#include <atomic>
-#include <chrono>
 #include <concepts>
 #include <cstring>
 #include <ctime>
+#include <realtimeloop/asynclogger.hpp>
+#include <realtimeloop/schedtimer.hpp>
+#include <realtimeloop/scopedtimer.hpp>
 #include <stdexcept>
+#include <stop_token>
 #include <type_traits>
 
 namespace Asclepius {
 
-template <auto LoopPeriod, bool TelemetryEnabled = false>
-requires requires { std::chrono::duration_cast<std::chrono::nanoseconds>(LoopPeriod); }
+template <typename F, int64_t NsPeriod, bool TelemetryEnabled = false>
+requires requires {
+  { NsPeriod > 0 };
+  { std::invocable<F> };
+}
 class Monoloop {
 public:
-  Monoloop() : m_running{false} {}
-  ~Monoloop() { stop(); }
-
-  template <typename F>
-  requires std::invocable<F>
-  void start(F &&func) {
-    if (m_running.exchange(true, std::memory_order_relaxed))
-      return;
-    constexpr auto ns_dur = std::chrono::duration_cast<std::chrono::nanoseconds>(LoopPeriod);
-    constexpr int64_t period = ns_dur.count();
-    Schedtimer<period> loop_timer;
+  Monoloop(std::stop_token &stoken, F &&func) {
+    Schedtimer<NsPeriod> loop_timer;
 
     const int thread_priority = sched_get_priority_max(SCHED_FIFO);
     if (thread_priority == -1) {
@@ -40,20 +33,21 @@ public:
       throw std::runtime_error("Asclepius: unable to set realtime scheduling for realtime loop.");
     }
 
+    if constexpr (TelemetryEnabled) {
+      m_loop_log.start();
+    }
+
     for (;;) {
       {
         Telemetry::ConditionalTimer<TelemetryEnabled, decltype(m_loop_log), decltype(loop_timer)>
             guard{m_loop_log};
-        if (!m_running.load(std::memory_order_relaxed))
-          break;
+        if (stoken.stop_requested())
+          return;
         func();
       }
       loop_timer.await();
     }
-  }
 
-  void stop() {
-    m_running.store(false, std::memory_order_relaxed);
     if constexpr (TelemetryEnabled) {
       m_loop_log.stop();
     }
@@ -63,8 +57,6 @@ private:
   struct _Empty {};
   [[no_unique_address]] std::conditional_t<TelemetryEnabled, Telemetry::AsyncLogger<double, 512>,
                                            _Empty> m_loop_log;
-  std::atomic_bool m_running;
-
 }; // class Monoloop
 
 }; // namespace Asclepius
