@@ -1,27 +1,36 @@
 #pragma once
 
-#include <concepts>
 #include <cstring>
 #include <ctime>
+#include <functional>
 #include <realtimeloop/asynclogger.hpp>
 #include <realtimeloop/schedtimer.hpp>
-#include <realtimeloop/scopedtimer.hpp>
 #include <stdexcept>
 #include <stop_token>
-#include <type_traits>
+#include <sys/mman.h>
 
 namespace Asclepius {
 
-template <typename F, int64_t NsPeriod, bool TelemetryEnabled = false>
-requires requires {
-  { NsPeriod > 0 };
-  { std::invocable<F> };
-}
+template <int64_t NsPeriod>
+requires(NsPeriod > 0)
 class Monoloop {
 public:
-  Monoloop(std::stop_token &stoken, F &&func) {
+  Monoloop(std::stop_token stoken, std::function<void()> &&func) {
     Schedtimer<NsPeriod> loop_timer;
 
+    for (;;) {
+      {
+        if (stoken.stop_requested()) {
+          return;
+        }
+        func();
+      }
+      loop_timer.await();
+    }
+  }
+
+private:
+  void get_realtime_priority() {
     const int thread_priority = sched_get_priority_max(SCHED_FIFO);
     if (thread_priority == -1) {
       throw std::runtime_error("Asclepius: unable to get maximum priority for realtime loop.");
@@ -33,30 +42,11 @@ public:
       throw std::runtime_error("Asclepius: unable to set realtime scheduling for realtime loop.");
     }
 
-    if constexpr (TelemetryEnabled) {
-      m_loop_log.start();
-    }
-
-    for (;;) {
-      {
-        Telemetry::ConditionalTimer<TelemetryEnabled, decltype(m_loop_log), decltype(loop_timer)>
-            guard{m_loop_log};
-        if (stoken.stop_requested())
-          return;
-        func();
-      }
-      loop_timer.await();
-    }
-
-    if constexpr (TelemetryEnabled) {
-      m_loop_log.stop();
+    if (mlockall(MCL_CURRENT | MCL_FUTURE) < 0) {
+      throw std::runtime_error("Asclepius: unable to lock memory pages for realtime loop: " +
+                               std::to_string(errno));
     }
   }
-
-private:
-  struct _Empty {};
-  [[no_unique_address]] std::conditional_t<TelemetryEnabled, Telemetry::AsyncLogger<double, 512>,
-                                           _Empty> m_loop_log;
 }; // class Monoloop
 
 }; // namespace Asclepius

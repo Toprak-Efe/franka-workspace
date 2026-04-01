@@ -1,15 +1,13 @@
 #pragma once
 
-#include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/src/Core/Map.h>
-#include <eigen3/Eigen/src/Geometry/Quaternion.h>
-#include <snippets/control/nthhold.hpp>
-#include <snippets/control/physics.hpp>
-#include <snippets/memory/triplebuffer.hpp>
-#include <utility>
+#include <tlib/control/spatial.hpp>
 
 namespace Asclepius {
 
+using TwistDisplacement = CompositeSignal<Twist, Displacement>;
+using WrenchDisplacement = CompositeSignal<Wrench, Displacement>;
+
+/*
 class CouplingMap {
 public:
   CouplingMap();
@@ -27,8 +25,8 @@ public:
 private:
   Eigen::Quaterniond m_rotation;
   double m_scale{1.0};
-}; // class CouplingMap
-
+};*/ // class CouplingMap
+/*
 class BilateralController {
 public:
   BilateralController() = delete;
@@ -52,30 +50,6 @@ private:
   Twist v_m_prev;
   Wrench f_s_prev;
   Displacement p_m_prev, p_s_prev;
-}; // class BilateralController
-
-using TwistBuffer = TripleBuffer<Twist>;
-struct TwistDisplacement {
-  Twist twist;
-  Displacement displacement;
-};
-using TwistDisplacementBuffer = TripleBuffer<TwistDisplacement>;
-
-using WrenchBuffer = TripleBuffer<Wrench>;
-struct WrenchDisplacement {
-  Wrench wrench;
-  Displacement displacement;
-};
-using WrenchDisplacementBuffer = TripleBuffer<WrenchDisplacement>;
-
-struct WrenchTwistDisplacementBuffer {
-  WrenchBuffer wbuff;
-  TwistDisplacementBuffer tdbuff;
-}; // WrenchTwistDisplacementBuffer
-
-struct TwistWrenchDisplacementBuffer {
-  TwistBuffer tbuff;
-  WrenchDisplacementBuffer wdbuff;
-}; // TwistWrenchDisplacementBuffer
+}; */ // class BilateralController
 
 }; // namespace Asclepius

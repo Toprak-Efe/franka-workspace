@@ -1,65 +1,141 @@
 #include <HD/hdDefines.h>
 #include <HD/hdDevice.h>
 #include <HD/hdScheduler.h>
-#include <Eigen/src/Core/Matrix.h>
+#include <bilateralcontrol/common.hpp>
 #include <bilateralcontrol/haptic.hpp>
-#include <mutex>
+#include <bilateralcontrol/shutdown.hpp>
+#include <chrono>
+#include <exception>
+#include <stdexcept>
+#include <stop_token>
+#include <thread>
+#include <tlib/control/devices.hpp>
+#include <tlib/control/signal.hpp>
+#include <utility>
 
-HDCallbackCode HDCALLBACK asclepius_haptic_callback(void *buffer) {
+Asclepius::HapticDevice::HapticDevice(const std::string &id_name,
+                                      SignalPort<Asclepius::TwistDisplacement> *sensor_port,
+                                      SignalPort<Wrench> *command_port)
+    : DeviceInterface<Asclepius::TwistDisplacement, Wrench>(sensor_port, command_port),
+      state_(State::Idle), flock_("asclepis", id_name) {
+  HDErrorInfo error;
+  id_ = hdInitDevice(id_name.c_str());
+  if (HD_DEVICE_ERROR(error = hdGetError())) {
+    ShutdownCoordinator::instance().shutdown_with_exception(
+        std::make_exception_ptr(std::runtime_error("Unable initialize haptic device.")));
+    return;
+  }
+}
+
+Asclepius::HapticDevice::HapticDevice(HapticDevice &&oth)
+    : flock_(std::move(oth.flock_)), DeviceInterface(oth.sensor_, oth.command_), id_(oth.id_) {
+  state_ = State::Idle;
+  oth.stop();
+  oth.id_ = 0;
+  oth.sensor_ = nullptr;
+  oth.command_ = nullptr;
+}
+
+Asclepius::HapticDevice::~HapticDevice() {
+  auto expected = State::Running;
+  if (!state_.compare_exchange_strong(expected, State::Halting)) {
+    return;
+  }
+
+  worker_.request_stop();
+  if (worker_.joinable()) {
+    worker_.join();
+  }
+}
+
+void Asclepius::HapticDevice::start() {
+  auto expected = State::Idle;
+  if (!state_.compare_exchange_strong(expected, State::Running)) {
+    throw std::logic_error{"Cannot run when not idle."};
+  }
+
+  worker_ = std::jthread{[this](std::stop_token stoken) {
+    hdMakeCurrentDevice(id_);
+    hdEnable(HD_FORCE_OUTPUT);
+
+    scheduler_counter_.increment();
+    hdScheduleSynchronous(Asclepius::HapticDevice::io_callback, this,
+                          HD_DEFAULT_SCHEDULER_PRIORITY);
+    HDErrorInfo error;
+    if (HD_DEVICE_ERROR(error = hdGetError())) {
+      ShutdownCoordinator::instance().shutdown_with_exception(std::make_exception_ptr(
+          std::runtime_error("Unable to enter haptic loop, scheduler error.")));
+      // Not returning immediately, as there is a chance the device could be running.
+      // Better to attempt cleanup.
+    }
+    scheduler_counter_.decrement();
+
+    hdDisable(HD_FORCE_OUTPUT);
+    hdDisableDevice(id_);
+
+    auto expected = State::Halting;
+    if (!state_.compare_exchange_strong(expected, State::Idle)) {
+      ShutdownCoordinator::instance().shutdown_with_exception(
+          std::make_exception_ptr(std::logic_error("Cannot idle when not halting.")));
+    }
+  }};
+}
+
+void Asclepius::HapticDevice::stop() {
+  auto expected = State::Running;
+  if (!state_.compare_exchange_strong(expected, State::Halting)) {
+    ShutdownCoordinator::instance().shutdown_with_exception(
+        std::make_exception_ptr(std::logic_error("Cannot halt when not running.")));
+    return;
+  }
+
+  worker_.request_stop();
+  if (worker_.joinable()) {
+    worker_.join();
+  }
+}
+
+HDCallbackCode Asclepius::HapticDevice::io_callback(void *ptr) {
   using namespace Asclepius;
-  HapticBuffer *buff = reinterpret_cast<HapticBuffer *>(buffer);
+  HapticDevice *haptic_device = static_cast<HapticDevice *>(ptr);
 
-  hdMakeCurrentDevice(buff->device_handle);
-  hdBeginFrame(buff->device_handle);
-  /* Read Velocity */
-  TwistDisplacement td{};
-  Eigen::Matrix<float, 3, 1> v, w;
-  hdGetFloatv(HD_CURRENT_VELOCITY, (HDfloat *)Eigen::Map<std::array<float, 3>>(v));
-  hdGetFloatv(HD_CURRENT_ANGULAR_VELOCITY, (HDfloat *)w.data());
-  std::array<float, 3> p, o;
-  hdGetFloatv(HD_CURRENT_POSITION, (HDfloat *)p.data());
-  hdGetFloatv(HD_CURRENT_GIMBAL_ANGLES, (HDfloat *)o.data());
-  Eigen::Matrix<float, 6, 1> vw;
+  hdMakeCurrentDevice(haptic_device->id_);
+  hdBeginFrame(haptic_device->id_);
 
-  t.stamp() = std::chrono::steady_clock::now();
+  auto timestamp = std::chrono::steady_clock::now();
+  Eigen::Vector3d velocity, angular_velocity, position, orientation;
+  hdGetDoublev(HD_CURRENT_VELOCITY, velocity.data());
+  hdGetDoublev(HD_CURRENT_ANGULAR_VELOCITY, angular_velocity.data());
+  hdGetDoublev(HD_CURRENT_POSITION, position.data());
+  hdGetDoublev(HD_CURRENT_GIMBAL_ANGLES, orientation.data());
+  Asclepius::TwistDisplacement sensor{Twist{velocity, angular_velocity, timestamp},
+                                      Displacement{position, orientation, timestamp}};
+  haptic_device->sensor_->push(sensor);
 
-  buff->buffer.tdbuff buff->force_velocity_buffer.velocity.add(vw);
+  Wrench command = haptic_device->command_->sample();
+  hdSetDoublev(HD_CURRENT_FORCE, command.linear().data());
+  hdSetDoublev(HD_CURRENT_GIMBAL_TORQUE, command.angular().data());
 
-  /* Write Force */
-  Force ft{};
-  if (buff->force_velocity_buffer.force.get(ft)) {
-    buff->zoh.push(ft);
-  } else {
-    ft = buff->zoh.sample();
-  }
-  float force[6];
-  for (size_t i = 0; i < 6; i++)
-    force[i] = static_cast<float>(ft.data[i]);
-  hdSetFloatv(HD_CURRENT_FORCE, force);
-  hdSetFloatv(HD_CURRENT_TORQUE, &force[3]);
-  hdEndFrame(buff->device_handle);
+  hdEndFrame(haptic_device->id_);
 
-  if (HD_DEVICE_ERROR(buff->error = hdGetError())) {
-    return HD_CALLBACK_DONE;
-  }
-
-  if (buff->p_stop_token->stop_requested()) {
+  if (haptic_device->state_.load() == State::Halting) {
     return HD_CALLBACK_DONE;
   } else {
     return HD_CALLBACK_CONTINUE;
   }
 }
 
-void Asclepius::HapticSchedulerCounter::incremenent() {
-  std::lock_guard<std::mutex> guard{m_lock};
-  if (m_scheduled++ == 0) {
+Asclepius::HapticDevice::HapticSchedulerCounter Asclepius::HapticDevice::scheduler_counter_{};
+
+void Asclepius::HapticDevice::HapticSchedulerCounter::increment() {
+  if (schedule_count_.fetch_add(1) == 0) {
     hdStartScheduler();
   }
 }
 
-void Asclepius::HapticSchedulerCounter::decrement() {
-  std::lock_guard<std::mutex> guard{m_lock};
-  if (--m_scheduled == 0) {
+void Asclepius::HapticDevice::HapticSchedulerCounter::decrement() {
+  uint32_t expected = 1;
+  if (schedule_count_.compare_exchange_strong(expected, 0)) {
     hdStopScheduler();
   }
 }

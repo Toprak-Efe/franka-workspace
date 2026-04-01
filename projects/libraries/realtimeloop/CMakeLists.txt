@@ -5,10 +5,8 @@ project(realtimeloop
 set(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/realtimeloop/asynclogger.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/realtimeloop/exception.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/realtimeloop/loopinfo.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/realtimeloop/monoloop.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/realtimeloop/schedtimer.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/realtimeloop/scopedtimer.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/realtimeloop/serialization.hpp
 )
 
@@ -29,6 +27,5 @@ target_sources(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME} PUBLIC
     pthread
     atomic_queue
-    snippets
 )
 

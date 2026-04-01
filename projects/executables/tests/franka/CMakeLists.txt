@@ -17,12 +17,12 @@ target_link_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    snippets
+    tlib
     nlohmann_json::nlohmann_json
     pthread
     atomic_queue
     Franka::Franka
     realtimeloop
     bilateralcontrol
-    ${HDAPI_LIBRARIES}
+    ${HD_LIBRARIES}
 )

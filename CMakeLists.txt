@@ -12,6 +12,14 @@ project(franka-workspace
     LANGUAGES CXX
 )
 
+find_package(Eigen3 REQUIRED) 
+find_package(Franka REQUIRED) 
+
+set(HD_LIBRARIES
+    /usr/lib/libHD.so
+    /usr/lib/libHDU.a
+)
+
 include(FetchContent)
 FetchContent_Declare(
     Matplot++
@@ -24,14 +32,16 @@ FetchContent_Declare(
     GIT_TAG v1.7.1
 )
 FetchContent_Declare(
-    json
-    URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
+    tlib
+    GIT_REPOSITORY https://git.ninehundredandsixtyseventhhall.com/toprak/tlib.git
+    GIT_TAG main
 )
 FetchContent_Declare(
-    snippets 
-    GIT_REPOSITORY https://git.ninehundredandsixtyseventhhall.com/toprak/snippets.git
-    GIT_TAG main 
+  toml11
+  GIT_REPOSITORY https://github.com/ToruNiina/toml11.git
+  GIT_TAG        v4.4.0
 )
-FetchContent_MakeAvailable(Matplot++ atomic_queue json snippets)
+FetchContent_MakeAvailable(Matplot++ atomic_queue toml11 tlib)
 
 add_subdirectory(projects)
+

@@ -13,16 +13,13 @@ target_sources(${PROJECT_NAME}
     PRIVATE
     ${SOURCES}
 )
-target_link_directories(${PROJECT_NAME} PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    snippets
-    nlohmann_json::nlohmann_json
-    pthread
-    atomic_queue
-    Franka::Franka
-    realtimeloop
+    Eigen3::Eigen
+    toml11::toml11
     bilateralcontrol
+    realtimeloop
     ${HDAPI_LIBRARIES}
+)
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
 )

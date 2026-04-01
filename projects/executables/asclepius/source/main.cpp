@@ -1,13 +1,9 @@
-#include "../include/config.hpp"
+#include <bilateralcontrol/haptic.hpp>
 #include <bilateralcontrol/shutdown.hpp>
-#include <bilateralcontrol/synclogger.hpp>
-#include <bilateralcontrol/system.hpp>
 #include <csignal>
 #include <exception>
 
-using namespace Asclepius;
-
-void signal_handler(int) { ShutdownCoordinator::get().shutdown(); }
+void signal_handler(int) { Asclepius::ShutdownCoordinator::instance().shutdown(); }
 
 int main() {
   signal(SIGINT, signal_handler);

@@ -8,14 +8,6 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(Franka REQUIRED)
-find_package(Eigen3 REQUIRED)
-
-set(HDAPI_LIBRARIES
-    /usr/lib/libHD.so
-    /usr/lib/libHDU.a
-)
-
 set(SOURCES
     source/main.cpp
     source/config.cpp
@@ -26,12 +18,13 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    nlohmann_json::nlohmann_json
+    Eigen3::Eigen
+    toml11::toml11
     pthread
     atomic_queue
     Franka::Franka
     realtimeloop
     bilateralcontrol
-    ${HDAPI_LIBRARIES}
+    ${HD_LIBRARIES}
 )
 

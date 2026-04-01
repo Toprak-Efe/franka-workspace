@@ -8,8 +8,6 @@
 #include <type_traits>
 #include <vector>
 
-namespace Asclepius::Telemetry {
-
 inline constexpr std::size_t max_serialized_elements = 1 << 26; // ~67M elements
 
 template <typename T>
@@ -50,6 +48,4 @@ template <typename T> std::vector<T> deserialize_vector(const std::filesystem::p
 
   return out;
 }
-
-}; // namespace Asclepius::Telemetry
 

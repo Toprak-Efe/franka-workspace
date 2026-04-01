@@ -2,7 +2,7 @@
 
 #include <atomic>
 #include <atomic_queue/atomic_queue.h>
-#include <semaphore>
+#include <mutex>
 #include <thread>
 #include <type_traits>
 #include <vector>
@@ -10,46 +10,55 @@
 namespace Asclepius::Telemetry {
 
 template <typename T, std::size_t L>
-requires std::is_trivially_constructible_v<T>
+requires std::is_trivially_constructible_v<T> && std::is_copy_constructible_v<T>
 class AsyncLogger {
 public:
-  AsyncLogger() : m_drop_count{0}, m_wake{0}, m_write_buffer{} { m_write_buffer.reserve(65'536); }
+  AsyncLogger() : m_drop_count{0}, m_write_buffer{} { m_write_buffer.reserve(65'536); }
   ~AsyncLogger() { stop(); }
 
   void push(const T &data) {
     if (!m_write_queue.try_push(data)) {
       m_drop_count.fetch_add(1);
-    } else {
-      m_wake.release();
     }
   }
 
   void start() {
-    if (m_thread.joinable())
+    std::lock_guard<std::mutex> guard{m_mutex};
+    if (m_running) {
       return;
-    m_running.store(true, std::memory_order_relaxed);
-    m_wake.try_acquire();
-    m_thread = std::thread{[this]() {
+    } else {
+      m_running = true;
+    };
+
+    m_thread = std::jthread{[&](std::stop_token stoken) {
       using namespace std::chrono_literals;
-      while (m_running.load(std::memory_order_relaxed)) {
+      while (!stoken.stop_requested()) {
         drain_queue();
-        m_wake.try_acquire_for(100ms);
+        std::this_thread::sleep_for(100ms);
       }
       drain_queue();
+      m_running = false;
     }};
   }
 
   void stop() {
-    m_running.store(false, std::memory_order_relaxed);
-    m_wake.release(1);
+    std::jthread local_thread;
+    {
+      std::lock_guard<std::mutex> guard{m_mutex};
+      std::swap(local_thread, m_thread);
+    }
+    m_thread.request_stop();
     if (m_thread.joinable()) {
       m_thread.join();
     }
   }
 
+  /**
+   * @note NOT THREAD SAFE.
+   */
   std::vector<T> &get_buffer() { return m_write_buffer; }
 
-  uint32_t get_drop_count() { return m_drop_count; }
+  uint32_t get_drop_count() { return m_drop_count.load(std::memory_order_relaxed); }
 
 private:
   void drain_queue() {
@@ -58,16 +67,14 @@ private:
       m_write_buffer.emplace_back(std::move(data));
     }
   }
-  std::atomic_bool m_running{false};
-  std::counting_semaphore<L> m_wake{0};
-  std::atomic<uint32_t> m_drop_count{0};
-  atomic_queue::AtomicQueue<T, L> m_write_queue;
-  std::vector<T> m_write_buffer;
-  std::thread m_thread;
-}; // class AsyncLogger
 
-struct EmptyLogger {
-  template <typename... Args> EmptyLogger(Args &&...) {}
-};
+  std::mutex m_mutex;
+  bool m_running{false};
+  std::jthread m_thread;
+
+  std::vector<T> m_write_buffer;
+  atomic_queue::AtomicQueue<T, L> m_write_queue;
+  std::atomic_uint32_t m_drop_count{0};
+}; // class AsyncLogger
 
 }; // namespace Asclepius::Telemetry

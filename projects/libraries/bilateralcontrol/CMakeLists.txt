@@ -3,13 +3,17 @@ project(bilateralcontrol
 )
 
 set(HEADERS
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/bilateralcontrol/franka.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/bilateralcontrol/common.hpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/include/bilateralcontrol/control.hpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/include/bilateralcontrol/franka.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/bilateralcontrol/haptic.hpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/include/bilateralcontrol/pipeline.hpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/include/bilateralcontrol/system.hpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/include/bilateralcontrol/synclogger.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/bilateralcontrol/shutdown.hpp
 )
 
 set(SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/common.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/haptic.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/shutdown.cpp
 )
@@ -28,6 +32,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     pthread
     atomic_queue
     realtimeloop
-    snippets
+    tlib 
+    Eigen3::Eigen
+    ${HD_LIBRARIES}
 )
 

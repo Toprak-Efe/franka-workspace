@@ -4,29 +4,29 @@
 #include <condition_variable>
 #include <exception>
 #include <mutex>
-#include <optional>
 
 namespace Asclepius {
 
 class ShutdownCoordinator {
 public:
-  void shutdown();
-  void shutdown_exception(std::exception_ptr &exception);
   void await_shutdown();
+
+  void shutdown();
+  void shutdown_with_exception(const std::exception_ptr &exception);
+
   bool is_shutdown();
-  bool is_shutdown_exception();
-  std::optional<std::exception_ptr> get_shutdown_exception();
-  static ShutdownCoordinator &get();
+  std::exception_ptr get_shutdown_exception();
+
+  static ShutdownCoordinator &instance();
 
 private:
   ShutdownCoordinator();
-  struct {
-    std::atomic_bool exset{false};
-    std::exception_ptr exception{nullptr};
-  } m_exception_block;
+
   std::mutex m_mutex;
+  std::exception_ptr m_exception{nullptr};
   std::atomic_bool m_running{true};
   std::condition_variable m_cv;
 };
 
 }; // namespace Asclepius
+
