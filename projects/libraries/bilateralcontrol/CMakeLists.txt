@@ -14,6 +14,7 @@ set(HEADERS
 
 set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/source/common.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/source/franka.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/haptic.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/shutdown.cpp
 )

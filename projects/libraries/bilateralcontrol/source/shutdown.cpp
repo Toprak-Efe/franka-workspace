@@ -22,7 +22,7 @@ bool Asclepius::ShutdownCoordinator::is_shutdown() { return !m_running.load(); }
 
 void Asclepius::ShutdownCoordinator::await_shutdown() {
   std::unique_lock<std::mutex> lock(m_mutex);
-  m_cv.wait(lock, [this] { return m_running.load(); });
+  m_cv.wait(lock, [this] { return !m_running.load(); });
 
   if (m_exception) {
     std::rethrow_exception(m_exception);

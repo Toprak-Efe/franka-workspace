@@ -21,9 +21,10 @@ Asclepius::HapticDevice::HapticDevice(const std::string &id_name,
   HDErrorInfo error;
   id_ = hdInitDevice(id_name.c_str());
   if (HD_DEVICE_ERROR(error = hdGetError())) {
-    ShutdownCoordinator::instance().shutdown_with_exception(
-        std::make_exception_ptr(std::runtime_error("Unable initialize haptic device.")));
-    return;
+    auto exception =
+        std::runtime_error(std::format("Unable to initialize haptic device: {}.", id_name.c_str()));
+    ShutdownCoordinator::instance().shutdown_with_exception(std::make_exception_ptr(exception));
+    throw exception;
   }
 }
 
@@ -51,7 +52,7 @@ Asclepius::HapticDevice::~HapticDevice() {
 void Asclepius::HapticDevice::start() {
   auto expected = State::Idle;
   if (!state_.compare_exchange_strong(expected, State::Running)) {
-    throw std::logic_error{"Cannot run when not idle."};
+    throw std::logic_error{"Haptic: cannot run when not idle."};
   }
 
   worker_ = std::jthread{[this](std::stop_token stoken) {
@@ -59,9 +60,15 @@ void Asclepius::HapticDevice::start() {
     hdEnable(HD_FORCE_OUTPUT);
 
     scheduler_counter_.increment();
-    hdScheduleSynchronous(Asclepius::HapticDevice::io_callback, this,
-                          HD_DEFAULT_SCHEDULER_PRIORITY);
+    HDSchedulerHandle handle = hdScheduleAsynchronous(Asclepius::HapticDevice::io_callback, this,
+                                                      HD_DEFAULT_SCHEDULER_PRIORITY);
     HDErrorInfo error;
+    if (HD_DEVICE_ERROR(error = hdGetError())) {
+      ShutdownCoordinator::instance().shutdown_with_exception(
+          std::make_exception_ptr(std::runtime_error("Failed to schedule async haptic callback.")));
+    }
+    hdWaitForCompletion(handle, HD_WAIT_INFINITE);
+
     if (HD_DEVICE_ERROR(error = hdGetError())) {
       ShutdownCoordinator::instance().shutdown_with_exception(std::make_exception_ptr(
           std::runtime_error("Unable to enter haptic loop, scheduler error.")));
@@ -76,7 +83,7 @@ void Asclepius::HapticDevice::start() {
     auto expected = State::Halting;
     if (!state_.compare_exchange_strong(expected, State::Idle)) {
       ShutdownCoordinator::instance().shutdown_with_exception(
-          std::make_exception_ptr(std::logic_error("Cannot idle when not halting.")));
+          std::make_exception_ptr(std::logic_error("Haptic: cannot idle when not halting.")));
     }
   }};
 }
@@ -85,7 +92,7 @@ void Asclepius::HapticDevice::stop() {
   auto expected = State::Running;
   if (!state_.compare_exchange_strong(expected, State::Halting)) {
     ShutdownCoordinator::instance().shutdown_with_exception(
-        std::make_exception_ptr(std::logic_error("Cannot halt when not running.")));
+        std::make_exception_ptr(std::logic_error("Haptic: cannot halt when not running.")));
     return;
   }
 
@@ -105,8 +112,14 @@ HDCallbackCode Asclepius::HapticDevice::io_callback(void *ptr) {
   auto timestamp = std::chrono::steady_clock::now();
   Eigen::Vector3d velocity, angular_velocity, position, orientation;
   hdGetDoublev(HD_CURRENT_VELOCITY, velocity.data());
+
   hdGetDoublev(HD_CURRENT_ANGULAR_VELOCITY, angular_velocity.data());
   hdGetDoublev(HD_CURRENT_POSITION, position.data());
+
+  // OpenHaptics gimbal 
+  //   gimbal[0] = roll  → rotation about -Z
+  //   gimbal[1] = pitch → rotation about -X
+  //   gimbal[2] = yaw   → rotation about +Y
   hdGetDoublev(HD_CURRENT_GIMBAL_ANGLES, orientation.data());
   Asclepius::TwistDisplacement sensor{Twist{velocity, angular_velocity, timestamp},
                                       Displacement{position, orientation, timestamp}};
@@ -118,11 +131,7 @@ HDCallbackCode Asclepius::HapticDevice::io_callback(void *ptr) {
 
   hdEndFrame(haptic_device->id_);
 
-  if (haptic_device->state_.load() == State::Halting) {
-    return HD_CALLBACK_DONE;
-  } else {
-    return HD_CALLBACK_CONTINUE;
-  }
+  return haptic_device->state_.load() == State::Halting ? HD_CALLBACK_DONE : HD_CALLBACK_CONTINUE;
 }
 
 Asclepius::HapticDevice::HapticSchedulerCounter Asclepius::HapticDevice::scheduler_counter_{};

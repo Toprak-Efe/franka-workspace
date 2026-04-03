@@ -22,7 +22,7 @@ set(HD_LIBRARIES
 
 include(FetchContent)
 FetchContent_Declare(
-    Matplot++
+    matplotplusplus 
     GIT_REPOSITORY https://github.com/alandefreitas/matplotplusplus
     GIT_TAG v1.2.2
 )
@@ -41,7 +41,7 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/ToruNiina/toml11.git
   GIT_TAG        v4.4.0
 )
-FetchContent_MakeAvailable(Matplot++ atomic_queue toml11 tlib)
+FetchContent_MakeAvailable(matplotplusplus atomic_queue toml11 tlib)
 
 add_subdirectory(projects)
 
