@@ -57,18 +57,17 @@ int main(int argc, char *argv[]) {
 
   std::vector<double> x, y, z;
 
-  {
+  { // Extract needed data to x,y,z
     std::vector<Wrench> commands_series = get_telemetry_series_from<Wrench>(fm_folder);
     std::vector<Asclepius::TwistDisplacement> sensor_series =
         get_telemetry_series_from<Asclepius::TwistDisplacement>(vm_folder);
     for (const Asclepius::TwistDisplacement &td : sensor_series) {
-      Displacement displacement = td.get<1>();
-      x.emplace_back(displacement.linear().x());
-      y.emplace_back(displacement.linear().y());
-      z.emplace_back(displacement.linear().z());
+      Twist velocity = td.get<0>();
+      std::cout << velocity.angular().x() << '\n';
     }
   }
 
+  // Plot x,y,z
   matplot::plot3(x, y, z);
   matplot::show();
 

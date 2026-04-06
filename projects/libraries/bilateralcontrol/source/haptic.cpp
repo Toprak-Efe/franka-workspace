@@ -5,10 +5,12 @@
 #include <bilateralcontrol/haptic.hpp>
 #include <bilateralcontrol/shutdown.hpp>
 #include <chrono>
+#include <eigen3/Eigen/Geometry>
 #include <exception>
 #include <stdexcept>
 #include <stop_token>
 #include <thread>
+#include <tlib/control/calculus.hpp>
 #include <tlib/control/devices.hpp>
 #include <tlib/control/signal.hpp>
 #include <utility>
@@ -17,7 +19,8 @@ Asclepius::HapticDevice::HapticDevice(const std::string &id_name,
                                       SignalPort<Asclepius::TwistDisplacement> *sensor_port,
                                       SignalPort<Wrench> *command_port)
     : DeviceInterface<Asclepius::TwistDisplacement, Wrench>(sensor_port, command_port),
-      state_(State::Idle), flock_("asclepis", id_name) {
+      low_pass_(0.00782021, 0.01564042, 0.00782021, -1.73472577, 0.7660066), state_(State::Idle),
+      flock_("asclepis", id_name), debug_("transform"){
   HDErrorInfo error;
   id_ = hdInitDevice(id_name.c_str());
   if (HD_DEVICE_ERROR(error = hdGetError())) {
@@ -29,7 +32,7 @@ Asclepius::HapticDevice::HapticDevice(const std::string &id_name,
 }
 
 Asclepius::HapticDevice::HapticDevice(HapticDevice &&oth)
-    : flock_(std::move(oth.flock_)), DeviceInterface(oth.sensor_, oth.command_), id_(oth.id_) {
+    : flock_(std::move(oth.flock_)), DeviceInterface(oth.sensor_, oth.command_), id_(oth.id_), debug_("transform") {
   state_ = State::Idle;
   oth.stop();
   oth.id_ = 0;
@@ -109,20 +112,22 @@ HDCallbackCode Asclepius::HapticDevice::io_callback(void *ptr) {
   hdMakeCurrentDevice(haptic_device->id_);
   hdBeginFrame(haptic_device->id_);
 
-  auto timestamp = std::chrono::steady_clock::now();
-  Eigen::Vector3d velocity, angular_velocity, position, orientation;
-  hdGetDoublev(HD_CURRENT_VELOCITY, velocity.data());
+  std::chrono::steady_clock::time_point timestamp = std::chrono::steady_clock::now();
+  Eigen::Vector3d position, angular_position;
+  Displacement displacement;
+  Twist twist;
 
-  hdGetDoublev(HD_CURRENT_ANGULAR_VELOCITY, angular_velocity.data());
-  hdGetDoublev(HD_CURRENT_POSITION, position.data());
-
-  // OpenHaptics gimbal 
-  //   gimbal[0] = roll  → rotation about -Z
-  //   gimbal[1] = pitch → rotation about -X
-  //   gimbal[2] = yaw   → rotation about +Y
-  hdGetDoublev(HD_CURRENT_GIMBAL_ANGLES, orientation.data());
-  Asclepius::TwistDisplacement sensor{Twist{velocity, angular_velocity, timestamp},
-                                      Displacement{position, orientation, timestamp}};
+  std::array<double, 16> T_raw;
+  haptic_device->debug_.push(T_raw);
+  hdGetDoublev(HD_CURRENT_TRANSFORM, T_raw.data());
+  Eigen::Map<Eigen::Matrix4d> T(T_raw.data());
+  position = T.block<3, 1>(0, 3);
+  Eigen::AngleAxisd aa{T.block<3, 3>(0, 0)};
+  angular_position = aa.angle() * aa.axis();
+  twist = static_cast<Twist>(haptic_device->differentiator_(displacement));
+  twist = haptic_device->low_pass_.sample(twist);
+  twist.stamp() = timestamp;
+  Asclepius::TwistDisplacement sensor{twist, Displacement{position, angular_position, timestamp}};
   haptic_device->sensor_->push(sensor);
 
   Wrench command = haptic_device->command_->sample();

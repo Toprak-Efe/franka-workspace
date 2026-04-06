@@ -21,6 +21,7 @@ set(HD_LIBRARIES
 )
 
 include(FetchContent)
+set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
 FetchContent_Declare(
     matplotplusplus 
     GIT_REPOSITORY https://github.com/alandefreitas/matplotplusplus

@@ -2,6 +2,8 @@ project(bilateralcontrol
     LANGUAGES CXX
 )
 
+find_package(Franka REQUIRED) 
+
 set(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/bilateralcontrol/common.hpp
     #${CMAKE_CURRENT_SOURCE_DIR}/include/bilateralcontrol/control.hpp
