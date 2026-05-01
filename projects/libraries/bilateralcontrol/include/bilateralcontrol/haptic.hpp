@@ -1,6 +1,5 @@
 #pragma once
 
-#include "tlib/control/telemetry.hpp"
 #include <HD/hdScheduler.h>
 #include <bilateralcontrol/common.hpp>
 #include <bilateralcontrol/shutdown.hpp>
@@ -9,17 +8,28 @@
 #include <thread>
 #include <tlib/concurrency/flock.hpp>
 #include <tlib/control/biquad.hpp>
-#include <tlib/control/calculus.hpp>
 #include <tlib/control/devices.hpp>
+#include <tlib/control/estimators/differentiate.hpp>
+#include <tlib/control/filters/average.hpp>
 #include <tlib/control/signal.hpp>
 #include <tlib/control/spatial.hpp>
 
 namespace Asclepius {
 
-class HapticDevice : DeviceInterface<TwistDisplacement, Wrench> {
+class PhantomOmni {
+public:
+  using Model = Eigen::Matrix4d;
+  PhantomOmni(const std::array<double, 6> &);
+  PhantomOmni(const Eigen::Vector<double, 6> &);
+
+private:
+}; // PhantomOmniModel
+
+class HapticDevice : DeviceInterface<TwistDisplacement, Wrench, 1> {
 public:
   HapticDevice() = delete;
-  explicit HapticDevice(const std::string &device_name, SignalPort<TwistDisplacement> *sensor_port,
+  explicit HapticDevice(const std::string &device_name,
+                        SignalPort<TwistDisplacement, 1> *sensor_port,
                         SignalPort<Wrench> *command_port);
   HapticDevice(HapticDevice &&);
   HapticDevice(const HapticDevice &) = delete;
@@ -29,10 +39,9 @@ public:
   void stop() override;
 
 private:
-  TelemetryChannel<std::array<double, 16>> debug_;
   HHD id_;
-  Biquad<Twist> low_pass_;
-  Differentiator<Displacement> differentiator_;
+  MovingAverage<Displacement, 16> moving_average_;
+  CentralDifferenceDifferentiator<Displacement> differentiator_;
   static HDCallbackCode io_callback(void *);
   static class HapticSchedulerCounter {
   public:
@@ -42,6 +51,7 @@ private:
   private:
     std::atomic_uint32_t schedule_count_{0};
   } scheduler_counter_;
+
 private:
   std::jthread worker_;
   enum class State : uint8_t { Idle, Running, Halting };

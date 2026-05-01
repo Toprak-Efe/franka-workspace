@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
 
   std::vector<double> y;
   for (double x : x) {
-    y.emplace_back(low_pass.sample(x));
+    y.emplace_back(low_pass(x));
   }
 
   auto p = matplot::plot(t, y, t, x);

@@ -13,8 +13,8 @@ void Asclepius::ShutdownCoordinator::shutdown_with_exception(const std::exceptio
   if (!m_running.exchange(false)) {
     return;
   }
-  m_exception = std::move(exception);
   std::lock_guard<std::mutex> lock(m_mutex);
+  m_exception = std::move(exception);
   m_cv.notify_all();
 }
 

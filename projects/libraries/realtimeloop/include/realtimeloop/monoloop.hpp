@@ -17,6 +17,7 @@ class Monoloop {
 public:
   Monoloop(std::stop_token stoken, std::function<void()> &&func) {
     Schedtimer<NsPeriod> loop_timer;
+    get_realtime_priority();
 
     for (;;) {
       {

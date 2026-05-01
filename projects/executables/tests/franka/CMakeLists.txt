@@ -18,11 +18,11 @@ target_link_directories(${PROJECT_NAME} PRIVATE
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE
     tlib
-    nlohmann_json::nlohmann_json
+    toml11::toml11
+    bilateralcontrol
+    realtimeloop
     pthread
     atomic_queue
     Franka::Franka
-    realtimeloop
-    bilateralcontrol
     ${HD_LIBRARIES}
 )

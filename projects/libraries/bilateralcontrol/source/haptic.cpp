@@ -10,17 +10,16 @@
 #include <stdexcept>
 #include <stop_token>
 #include <thread>
-#include <tlib/control/calculus.hpp>
 #include <tlib/control/devices.hpp>
+#include <tlib/control/filters/clamping.hpp>
 #include <tlib/control/signal.hpp>
 #include <utility>
 
 Asclepius::HapticDevice::HapticDevice(const std::string &id_name,
-                                      SignalPort<Asclepius::TwistDisplacement> *sensor_port,
+                                      SignalPort<Asclepius::TwistDisplacement, 1> *sensor_port,
                                       SignalPort<Wrench> *command_port)
-    : DeviceInterface<Asclepius::TwistDisplacement, Wrench>(sensor_port, command_port),
-      low_pass_(0.00782021, 0.01564042, 0.00782021, -1.73472577, 0.7660066), state_(State::Idle),
-      flock_("asclepis", id_name), debug_("transform"){
+    : DeviceInterface<Asclepius::TwistDisplacement, Wrench, 1>(sensor_port, command_port),
+      differentiator_(1000.0), state_(State::Idle), flock_("asclepis", id_name) {
   HDErrorInfo error;
   id_ = hdInitDevice(id_name.c_str());
   if (HD_DEVICE_ERROR(error = hdGetError())) {
@@ -32,7 +31,8 @@ Asclepius::HapticDevice::HapticDevice(const std::string &id_name,
 }
 
 Asclepius::HapticDevice::HapticDevice(HapticDevice &&oth)
-    : flock_(std::move(oth.flock_)), DeviceInterface(oth.sensor_, oth.command_), id_(oth.id_), debug_("transform") {
+    : differentiator_{1000.0}, flock_(std::move(oth.flock_)),
+      DeviceInterface(oth.sensor_, oth.command_), id_(oth.id_) {
   state_ = State::Idle;
   oth.stop();
   oth.id_ = 0;
@@ -61,25 +61,23 @@ void Asclepius::HapticDevice::start() {
   worker_ = std::jthread{[this](std::stop_token stoken) {
     hdMakeCurrentDevice(id_);
     hdEnable(HD_FORCE_OUTPUT);
-
     scheduler_counter_.increment();
+
     HDSchedulerHandle handle = hdScheduleAsynchronous(Asclepius::HapticDevice::io_callback, this,
                                                       HD_DEFAULT_SCHEDULER_PRIORITY);
     HDErrorInfo error;
     if (HD_DEVICE_ERROR(error = hdGetError())) {
       ShutdownCoordinator::instance().shutdown_with_exception(
           std::make_exception_ptr(std::runtime_error("Failed to schedule async haptic callback.")));
+    } else {
+      hdWaitForCompletion(handle, HD_WAIT_INFINITE);
+      if (HD_DEVICE_ERROR(error = hdGetError())) {
+        ShutdownCoordinator::instance().shutdown_with_exception(std::make_exception_ptr(
+            std::runtime_error("Unable to enter haptic loop, scheduler error.")));
+      }
     }
-    hdWaitForCompletion(handle, HD_WAIT_INFINITE);
 
-    if (HD_DEVICE_ERROR(error = hdGetError())) {
-      ShutdownCoordinator::instance().shutdown_with_exception(std::make_exception_ptr(
-          std::runtime_error("Unable to enter haptic loop, scheduler error.")));
-      // Not returning immediately, as there is a chance the device could be running.
-      // Better to attempt cleanup.
-    }
     scheduler_counter_.decrement();
-
     hdDisable(HD_FORCE_OUTPUT);
     hdDisableDevice(id_);
 
@@ -109,28 +107,33 @@ HDCallbackCode Asclepius::HapticDevice::io_callback(void *ptr) {
   using namespace Asclepius;
   HapticDevice *haptic_device = static_cast<HapticDevice *>(ptr);
 
+  const static Clamper<Wrench> force_limiter{
+      Wrench(std::array<double, 6>{-4.0, -4.0, -4.0, -0.0, -0.0, -0.0}),
+      Wrench(std::array<double, 6>{4.0, 4.0, 4.0, 0.0, 0.0, 0.0})};
+
   hdMakeCurrentDevice(haptic_device->id_);
   hdBeginFrame(haptic_device->id_);
 
   std::chrono::steady_clock::time_point timestamp = std::chrono::steady_clock::now();
-  Eigen::Vector3d position, angular_position;
-  Displacement displacement;
-  Twist twist;
 
-  std::array<double, 16> T_raw;
-  haptic_device->debug_.push(T_raw);
+  std::array<double, 16> T_raw{0.0};
   hdGetDoublev(HD_CURRENT_TRANSFORM, T_raw.data());
-  Eigen::Map<Eigen::Matrix4d> T(T_raw.data());
-  position = T.block<3, 1>(0, 3);
+  Eigen::Map<const Eigen::Matrix4d> T(T_raw.data());
+
+  Eigen::Vector3d position = T.block<3, 1>(0, 3);
   Eigen::AngleAxisd aa{T.block<3, 3>(0, 0)};
-  angular_position = aa.angle() * aa.axis();
-  twist = static_cast<Twist>(haptic_device->differentiator_(displacement));
-  twist = haptic_device->low_pass_.sample(twist);
+  Eigen::Vector3d angular_position = aa.angle() * aa.axis();
+  Displacement displacement(position, angular_position, timestamp);
+
+  Displacement diff_disp = haptic_device->differentiator_(displacement);
+  diff_disp = haptic_device->moving_average_(diff_disp);
+  Twist twist = static_cast<Twist>(diff_disp);
   twist.stamp() = timestamp;
-  Asclepius::TwistDisplacement sensor{twist, Displacement{position, angular_position, timestamp}};
+  Asclepius::TwistDisplacement sensor{twist, displacement};
   haptic_device->sensor_->push(sensor);
 
   Wrench command = haptic_device->command_->sample();
+  command = force_limiter.clamp(command);
   hdSetDoublev(HD_CURRENT_FORCE, command.linear().data());
   hdSetDoublev(HD_CURRENT_GIMBAL_TORQUE, command.angular().data());
 

@@ -17,23 +17,6 @@ target_include_directories(haptic_test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-add_executable(graph_latest)
-target_sources(graph_latest
-    PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/graph_latest.cpp
-)
-target_link_libraries(graph_latest PRIVATE
-    tlib
-    matplot
-    Eigen3::Eigen
-    toml11::toml11
-    bilateralcontrol
-    realtimeloop
-)
-target_include_directories(graph_latest PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
 add_executable(lowpass_graph)
 target_sources(lowpass_graph
     PRIVATE
@@ -48,6 +31,23 @@ target_link_libraries(lowpass_graph PRIVATE
     realtimeloop
 )
 target_include_directories(lowpass_graph PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+add_executable(acceleration_graph)
+target_sources(acceleration_graph
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/acceleration_graph.cpp
+)
+target_link_libraries(acceleration_graph PRIVATE
+    tlib
+    matplot
+    Eigen3::Eigen
+    toml11::toml11
+    bilateralcontrol
+    realtimeloop
+)
+target_include_directories(acceleration_graph PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 

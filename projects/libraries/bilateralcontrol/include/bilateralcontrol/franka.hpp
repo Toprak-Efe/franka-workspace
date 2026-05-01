@@ -1,5 +1,7 @@
 #pragma once
 
+#include <tlib/control/biquad.hpp>
+#include <tlib/control/estimators/differentiate.hpp>
 #include <bilateralcontrol/common.hpp>
 #include <tlib/concurrency/flock.hpp>
 #include <tlib/control/devices.hpp>
@@ -18,7 +20,8 @@ public:
 
   void start() override;
   void stop() override;
-
+private:
+  Differentiator<CentralDifferenceDifferentiatorPolicy<Displacement>, Displacement> differentiator_;
 private:
   std::jthread worker_;
   enum class State : uint8_t { Idle, Running, Halting };

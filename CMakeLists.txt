@@ -12,8 +12,8 @@ project(franka-workspace
     LANGUAGES CXX
 )
 
-find_package(Eigen3 REQUIRED) 
-find_package(Franka REQUIRED) 
+find_package(Eigen3 REQUIRED)
+find_package(Franka REQUIRED)
 
 set(HD_LIBRARIES
     /usr/lib/libHD.so
@@ -23,7 +23,7 @@ set(HD_LIBRARIES
 include(FetchContent)
 set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
 FetchContent_Declare(
-    matplotplusplus 
+    matplotplusplus
     GIT_REPOSITORY https://github.com/alandefreitas/matplotplusplus
     GIT_TAG v1.2.2
 )
